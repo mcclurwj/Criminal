@@ -3,19 +3,17 @@ resolution = 40;
 
 nseq = [linspace(0,1,resolution) linspace(1,10,resolution)];
 
-X = linspace(-4,4,200);
-Y = X;
-
 %This line will save your precious time
 set(0,'DefaultFigureVisible','off');
 
 for i=1:2*resolution
     n = nseq(i);
-    P = @(L) max( 1 - (norm(L-C)/(3*R))^n, 0 ); 
-    z = probs(P,200);
+    P = @(L,nn) max( 1 - (point_to_line(L,points(1,:),points(end,:))...
+                           /(2*D))^nn,0); 
+    [X,Y,z] = probs(P,n,200,xlims,ylims);
     f = figure;
     surf(X,Y,z,'LineStyle','none');
-    axis([-4 4 -4 4 0 8e-4]);
+    axis([xlims ylims 0 2.5e-4]);
     colormap(linspecer);
     shading interp;
     
@@ -27,10 +25,10 @@ for i=1:2*resolution
     im = frame2im(frame);
     [imind,cm] = rgb2ind(im,256);
     if i==1
-        imwrite(imind,cm,'test.gif','gif','DelayTime',0.01,...
+        imwrite(imind,cm,'GenPolyLine.gif','gif','DelayTime',0.01,...
             'Loopcount',inf);
     else
-        imwrite(imind,cm,'test.gif','gif','DelayTime',0.01,...
+        imwrite(imind,cm,'GenPolyLine.gif','gif','DelayTime',0.01,...
             'WriteMode','append');
     end
 end
@@ -38,16 +36,16 @@ end
 %This line might save you even more time
 set(0,'DefaultFigureVisible','on');
 
-function z = probs(P,resolution)
-    X = linspace(-4,4,resolution);
-    Y = X;
+function [X,Y,z] = probs(P,nn,resolution,xlims,ylims)
+    X = linspace(xlims(1),xlims(2),resolution);
+    Y = linspace(ylims(1),ylims(2),resolution);
 
     [Xg,Yg] = meshgrid(X,Y);
     Z = zeros(size(Xg));
     for i=1:resolution^2
         xx = Xg(i);
         yy = Yg(i);
-        Z(i) = P([xx yy]);
+        Z(i) = P([xx yy],nn);
     end
 
     z = Z/sum(sum(Z));
