@@ -8,7 +8,7 @@ y = data(body_loc_rows, 2);
 crime_data = [x y];
 
 % parameters for Rossmo's
-buffer_size = 10;
+buffer_size = 2;
 f = 1.2;
 g = 1.2;
 
@@ -20,8 +20,14 @@ P = @(L) compute_rossmo_prob(L, crime_data, buffer_size, f, g);
 targetX = locX(index_of_max);
 targetY = locY(index_of_max);
 
+% Display results (most likely place and heatmap)
 text = sprintf("The most likely place for the next crime to occur is at %d km east and %d km north.", targetX, targetY);
 disp(text);
+
+xran = [0 100];
+yran = [0 100];
+imagesc(xran, yran, assoc_probs);
+plotdata(crime_data, ones(size(crime_data,1),1), xran, yran);
 function [output_prob] = compute_rossmo_prob(L, crime_locations, buffer_size, outside_buffer_f, inside_buffer_g)
     copied_L = ones(size(crime_locations)) .* L;
     manhat_distances_to_crimes = sum(abs(copied_L - crime_locations),2);
@@ -54,4 +60,18 @@ function [Xg, Yg, z] = probs(P,resolution)
     end
    
     z = Z/sum(sum(Z));
+end
+
+function plotdata(X, Y, x1ran, x2ran)
+    hold on;
+    ind = find(Y>0);
+    plot(X(ind,1), X(ind,2), 'bo');
+    ind = find(Y<0);
+    plot(X(ind,1), X(ind,2), 'gx');
+    axis([x1ran x2ran]);
+    axis xy;
+    text(X(:,1)+.2,X(:,2), int2str([1:length(Y)]'));
+    xlabel('East (km)');
+    ylabel('North (km)');
+    title("Peter Sutcliffe's Murders");
 end
