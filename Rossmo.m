@@ -10,8 +10,8 @@ crime_data = [x y];
 
 % parameters for Rossmo's
 buffer_size = 2;
-f = -0.2;
-g = -1.8;
+f = 0.2;
+g = 1.8;
 
 % Tune Parameters
 % best_f = -2;
@@ -61,6 +61,7 @@ xran = [0 100];
 yran = [0 100];
 imagesc(xran, yran, assoc_probs);
 plotdata(crime_data, ones(size(crime_data,1),1), xran, yran);
+
 function [output_prob] = compute_rossmo_prob(L, crime_locations, buffer_size, outside_buffer_f, inside_buffer_g, time)
     copied_L = ones(size(crime_locations)) .* L;
     manhat_distances_to_crimes = sum(abs(copied_L - crime_locations),2);
@@ -74,7 +75,7 @@ function [output_prob] = compute_rossmo_prob(L, crime_locations, buffer_size, ou
            curr_crime_contribution = time_decay(time, i) * (1 / curr_dist ^ outside_buffer_f);
 %            curr_crime_contribution = (1 / curr_dist ^ outside_buffer_f);
        else
-           curr_crime_contribution = time_decay(time, i) * (buffer_size ^ (outside_buffer_f - inside_buffer_g) / (2*buffer_size - curr_dist) ^ inside_buffer_g);
+           curr_crime_contribution = time_decay(time, i) * (1 / (2*buffer_size - curr_dist) ^ inside_buffer_g);
 %            curr_crime_contribution = (buffer_size ^ (outside_buffer_f - inside_buffer_g) / (2*buffer_size - curr_dist) ^ inside_buffer_g);
        end
        output_prob = output_prob + curr_crime_contribution;
