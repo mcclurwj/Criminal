@@ -1,5 +1,5 @@
 % Load criminal data
-criminal_file = 'data/peter_sutcliffe.csv';
+criminal_file = 'data/richard_ramirez.csv';
 [location_labels, data] = import_csv(criminal_file);
 
 body_loc_rows = find(location_labels == 'Body');
@@ -12,17 +12,30 @@ buffer_size = 2;
 f = 1.2;
 g = 1.2;
 
-% Run Rossmo's to find most likely place for next crime to occur
-P = @(L) compute_rossmo_prob(L, crime_data, buffer_size, f, g);
-[locX, locY, assoc_probs] = probs(P,101);
+% Split crime data into validation/test sets
+num_rows = length(crime_data);
+first_test_row = ceil(2/3 * num_rows);
+for i = first_test_row:num_rows
+    curr_crime_data = crime_data(1:i-1, :);
+    curr_location = crime_data(i, :);
+    
+    currX = curr_location(1);
+    currY = curr_location(2);
+    
+    % Run Rossmo's to find most likely place for next crime to occur
+    P = @(L) compute_rossmo_prob(L, curr_crime_data, buffer_size, f, g);
+    [locX, locY, assoc_probs, norm_sum] = probs(P,101);
+    currLocProb = P(curr_location) / norm_sum;
+    [max_val, index_of_max] = max(assoc_probs(:));
+    predictedX = locX(index_of_max);
+    predictedY = locY(index_of_max);
+    
 
-[max_val, index_of_max] = max(assoc_probs(:));
-targetX = locX(index_of_max);
-targetY = locY(index_of_max);
-
-% Display results (most likely place and heatmap)
-text = sprintf("The most likely place for the next crime to occur is at %d km east and %d km north.", targetX, targetY);
-disp(text);
+    dist = sqrt((predictedX - currX)^2 + (predictedY - currY)^2);
+    % Display results (most likely place and heatmap)
+    text = sprintf("\\hline\n$(%0.2f, %0.2f)$ & $%0.3f\\%%$ & $(%d, %d)$ & $%0.3f\\%%$ & $%0.2f$ \\\\", currX, currY, currLocProb*100, predictedX, predictedY, max_val*100, dist);
+    disp(text);
+end
 
 xran = [0 100];
 yran = [0 100];
@@ -40,14 +53,14 @@ function [output_prob] = compute_rossmo_prob(L, crime_locations, buffer_size, ou
        if(curr_dist > buffer_size)
            curr_crime_contribution = 1 / curr_dist ^ outside_buffer_f;
        else
-           curr_crime_contribution = buffer_size ^ (outside_buffer_f - inside_buffer_g) / (2*buffer_size - curr_dist) ^ inside_buffer_g;
+           curr_crime_contribution = 1 / (2*buffer_size - curr_dist) ^ inside_buffer_g;
        end
        
        output_prob = output_prob + curr_crime_contribution;
     end
 end
 
-function [Xg, Yg, z] = probs(P,resolution)
+function [Xg, Yg, z, norm_sum] = probs(P,resolution)
     X = transpose(linspace(0,100,resolution));
     Y = X;
 
@@ -59,7 +72,8 @@ function [Xg, Yg, z] = probs(P,resolution)
         Z(i) = P([xx yy]);
     end
    
-    z = Z/sum(sum(Z));
+    norm_sum = sum(sum(Z));
+    z = Z/norm_sum;
 end
 
 function plotdata(X, Y, x1ran, x2ran)
